@@ -1,0 +1,53 @@
+version: '1.2.8'
+
+# Interface Configuration
+interface:
+  customWelcome: "Welcome to Corust.ai! Enjoy your experience."
+  fileSearch: true
+  privacyPolicy:
+    externalUrl: "https://librechat.ai/privacy-policy"
+    openNewTab: true
+  termsOfService:
+    externalUrl: "https://librechat.ai/tos"
+    openNewTab: true
+  endpointsMenu: true
+  modelSelect: true
+  parameters: true
+  sidePanel: true
+  presets: true
+  prompts: true
+  bookmarks: true
+  multiConvo: true
+  agents: true
+
+# Registration Configuration
+registration:
+  socialLogins:
+    - github
+    - google
+
+# Actions Configuration
+actions:
+  allowedDomains:
+    - librechat.ai
+    - google.com
+
+# Endpoints Configuration
+endpoints:
+  custom:
+    - name: "OpenAI"
+      apiKey: "${OPENAI_API_KEY}"
+      baseURL: "https://api.openai.com/v1"
+      models:
+        default:
+          - "gpt-3.5-turbo"
+          - "gpt-4"
+        fetch: true
+      titleConvo: true
+      titleModel: "gpt-3.5-turbo"
+      summarize: true
+      summaryModel: "gpt-3.5-turbo"
+      forcePrompt: false
+
+# Cache Configuration
+cache: true
