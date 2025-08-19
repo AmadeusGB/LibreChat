@@ -137,3 +137,6 @@ helm/**/.values.yaml
 /.openai/
 /.tabnine/
 /.codeium
+
+# Doec
+RAILWAY_DEPLOYMENT_GUIDE.md
