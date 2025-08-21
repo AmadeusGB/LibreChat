@@ -49,5 +49,21 @@ endpoints:
       summaryModel: "gpt-3.5-turbo"
       forcePrompt: false
 
+# File Configuration - Disable file uploads
+fileConfig:
+  endpoints:
+    default:
+      disabled: true  # 禁用所有端点的文件上传
+    openAI:
+      disabled: true  # 禁用OpenAI端点的文件上传
+    OpenAI:
+      disabled: true  # 禁用自定义OpenAI端点的文件上传
+    custom:
+      disabled: true  # 禁用自定义端点的文件上传
+    assistants:
+      disabled: true  # 禁用Assistants端点的文件上传
+    agents:
+      disabled: true  # 禁用Agents端点的文件上传
+
 # Cache Configuration
 cache: true
