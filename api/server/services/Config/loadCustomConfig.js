@@ -26,6 +26,28 @@ let i = 0;
  * @returns {Promise<TCustomConfig | null>} A promise that resolves to null or the custom config object.
  * */
 async function loadCustomConfig(printConfig = true) {
+  // Check if CONFIG_YAML_CONTENT is provided directly
+  if (process.env.CONFIG_YAML_CONTENT) {
+    try {
+      const customConfig = yaml.load(process.env.CONFIG_YAML_CONTENT);
+      const result = configSchema.strict().safeParse(customConfig);
+      if (!result.success) {
+        i === 0 && logger.error('Invalid YAML config from CONFIG_YAML_CONTENT:', result.error);
+        i === 0 && i++;
+        return null;
+      }
+      if (printConfig) {
+        logger.info('Custom config loaded from CONFIG_YAML_CONTENT:');
+        logger.info(JSON.stringify(customConfig, null, 2));
+      }
+      return customConfig;
+    } catch (parseError) {
+      i === 0 && logger.error('Failed to parse CONFIG_YAML_CONTENT:', parseError);
+      i === 0 && i++;
+      return null;
+    }
+  }
+
   // Use CONFIG_PATH if set, otherwise fallback to defaultConfigPath
   const configPath = process.env.CONFIG_PATH || defaultConfigPath;
 
