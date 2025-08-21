@@ -313,7 +313,8 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
                 }
               />
               <div className="mx-auto flex" />
-              {SpeechToText && (
+              {/* 🎤 麦克风功能已隐藏 - 如需启用，请取消注释下面的代码 */}
+              {/* {SpeechToText && (
                 <AudioRecorder
                   methods={methods}
                   ask={submitMessage}
@@ -321,7 +322,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
                   disabled={disableInputs || isNotAppendable}
                   isSubmitting={isSubmitting}
                 />
-              )}
+              )} */}
               <div className={`${isRTL ? 'ml-2' : 'mr-2'}`}>
                 {(isSubmitting || isSubmittingAdded) && (showStopButton || showStopAdded) ? (
                   <StopButton stop={handleStopGenerating} setShowStopButton={setShowStopButton} />
