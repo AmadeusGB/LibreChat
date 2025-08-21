@@ -4,12 +4,12 @@ version: '1.2.8'
 interface:
   customWelcome: "Welcome to Corust.ai! Enjoy your experience."
   fileSearch: true
-  privacyPolicy:
-    externalUrl: "https://librechat.ai/privacy-policy"
-    openNewTab: true
-  termsOfService:
-    externalUrl: "https://librechat.ai/tos"
-    openNewTab: true
+  # privacyPolicy:
+    # externalUrl: "https://librechat.ai/privacy-policy"
+    # openNewTab: true
+  # termsOfService:
+    # externalUrl: "https://librechat.ai/tos"
+    # openNewTab: true
   endpointsMenu: true
   modelSelect: true
   parameters: true
