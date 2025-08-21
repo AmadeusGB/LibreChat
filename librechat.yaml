@@ -14,10 +14,10 @@ interface:
   modelSelect: true
   parameters: true
   sidePanel: false
-  presets: true
+  presets: false
   prompts: true
   bookmarks: true
-  multiConvo: true
+  multiConvo: false
   agents: true
 
 # Registration Configuration
