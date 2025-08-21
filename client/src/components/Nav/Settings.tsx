@@ -7,7 +7,7 @@ import {
   GearIcon,
   DataIcon,
   UserIcon,
-  SpeechIcon,
+  // SpeechIcon, // 🎤 SpeechIcon导入已注释 - 如需启用请取消注释
   useMediaQuery,
   PersonalizationIcon,
 } from '@librechat/client';
@@ -16,7 +16,7 @@ import {
   General,
   Chat,
   Commands,
-  Speech,
+  // Speech, // 🎤 Speech组件导入已注释 - 如需启用请取消注释
   Personalization,
   Data,
   Balance,
@@ -40,7 +40,8 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       SettingsTabValues.GENERAL,
       SettingsTabValues.CHAT,
       SettingsTabValues.COMMANDS,
-      SettingsTabValues.SPEECH,
+      // 🎤 Speech选项卡已隐藏 - 如需启用请取消注释下一行
+      // SettingsTabValues.SPEECH,
       ...(hasAnyPersonalizationFeature ? [SettingsTabValues.PERSONALIZATION] : []),
       SettingsTabValues.DATA,
       ...(startupConfig?.balance?.enabled ? [SettingsTabValues.BALANCE] : []),
@@ -88,11 +89,12 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       icon: <Command className="icon-sm" />,
       label: 'com_nav_commands',
     },
-    {
-      value: SettingsTabValues.SPEECH,
-      icon: <SpeechIcon className="icon-sm" />,
-      label: 'com_nav_setting_speech',
-    },
+    // 🎤 Speech选项卡已隐藏 - 如需启用请取消注释下面的代码块
+    // {
+    //   value: SettingsTabValues.SPEECH,
+    //   icon: <SpeechIcon className="icon-sm" />,
+    //   label: 'com_nav_setting_speech',
+    // },
     ...(hasAnyPersonalizationFeature
       ? [
           {
@@ -229,9 +231,10 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     <Tabs.Content value={SettingsTabValues.COMMANDS}>
                       <Commands />
                     </Tabs.Content>
-                    <Tabs.Content value={SettingsTabValues.SPEECH}>
+                    {/* 🎤 Speech选项卡内容已隐藏 - 如需启用请取消注释下面的代码块 */}
+                    {/* <Tabs.Content value={SettingsTabValues.SPEECH}>
                       <Speech />
-                    </Tabs.Content>
+                    </Tabs.Content> */}
                     {hasAnyPersonalizationFeature && (
                       <Tabs.Content value={SettingsTabValues.PERSONALIZATION}>
                         <Personalization
