@@ -51,6 +51,10 @@ const connect = require('./connect');
   const inviteLink = `${process.env.DOMAIN_CLIENT}/register?token=${token}`;
 
   const appName = process.env.APP_TITLE || 'LibreChat';
+  
+  // 从邮箱地址提取用户名作为显示名称
+  const emailUsername = email.split('@')[0];
+  const displayName = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
 
   if (!checkEmailConfig()) {
     console.green('Send this link to the user:', inviteLink);
@@ -62,6 +66,7 @@ const connect = require('./connect');
       email: email,
       subject: `Invite to join ${appName}!`,
       payload: {
+        name: displayName, // 添加收件人姓名
         appName: appName,
         inviteLink: inviteLink,
         year: new Date().getFullYear(),
