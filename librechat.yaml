@@ -48,6 +48,12 @@ endpoints:
       summarize: true
       summaryModel: "gpt-3.5-turbo"
       forcePrompt: false
+  # Agents Configuration - 只保留 Artifacts 功能
+  agents:
+    # 启用agents endpoint
+    disabled: false
+    capabilities:
+      - artifacts
 
 # File Configuration - Disable file uploads
 fileConfig:
