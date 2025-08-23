@@ -140,3 +140,5 @@ helm/**/.values.yaml
 
 # Doec
 RAILWAY_DEPLOYMENT_GUIDE.md
+agent_workflow_api_test_report.md
+email_setup_guide.md
