@@ -59,6 +59,48 @@
 3. **无需UI修改**: ModelSelector 自动支持新端点
 4. **状态管理**: 完全复用现有 Recoil 状态管理
 
+### 测试验证
+
+**单元测试**:
+```javascript
+// 测试端点配置
+describe('RUSTMODEL Endpoint Configuration', () => {
+  test('should include rustModel in EndpointURLs', () => {
+    expect(EndpointURLs[EModelEndpoint.rustModel]).toBe('/api/agents/chat/rustModel');
+  });
+  
+  test('should include rustModel in defaultModels', () => {
+    expect(defaultModels[EModelEndpoint.rustModel]).toContain('claude-3-5-sonnet-20241022');
+  });
+});
+```
+
+**集成测试**:
+```javascript
+// 测试模型选择器
+describe('ModelSelector with RUSTMODEL', () => {
+  test('should display RUSTMODEL option', async () => {
+    render(<ModelSelector />);
+    const selector = screen.getByRole('combobox');
+    fireEvent.click(selector);
+    expect(screen.getByText('RustModel')).toBeInTheDocument();
+  });
+});
+```
+
+**手动测试步骤**:
+1. 启动前端应用
+2. 打开聊天界面
+3. 点击模型选择器
+4. 验证 "RustModel" 选项出现在列表中
+5. 选择 RustModel，验证状态正确更新
+
+**验证标准**:
+- ✅ 模型选择器中显示 "RustModel" 选项
+- ✅ 选择后 URL 变为 `/api/agents/chat/rustModel`
+- ✅ 状态管理正确更新选中的端点
+- ✅ 不影响其他端点的正常功能
+
 ---
 
 ## 2. 参数配置阶段
@@ -109,6 +151,59 @@
 2. **参数验证**: 调整 max_tokens 的最大值限制
 3. **UI复用**: 完全复用现有参数组件（滑块、开关等）
 4. **默认值**: 设置符合 RUSTMODEL 特点的默认值
+
+### 测试验证
+
+**单元测试**:
+```javascript
+// 测试参数配置
+describe('RUSTMODEL Parameter Settings', () => {
+  test('should have correct parameter definitions', () => {
+    const rustModelParams = parameterSettings[EModelEndpoint.rustModel];
+    expect(rustModelParams).toBeDefined();
+    expect(rustModelParams.find(p => p.key === 'use_rag')).toBeDefined();
+    expect(rustModelParams.find(p => p.key === 'temperature')).toBeDefined();
+  });
+  
+  test('should validate max_tokens range', () => {
+    const maxTokensParam = rustModelParams.find(p => p.key === 'max_tokens');
+    expect(maxTokensParam.range.max).toBe(100000);
+    expect(maxTokensParam.default).toBe(8192);
+  });
+});
+```
+
+**集成测试**:
+```javascript
+// 测试参数UI
+describe('RUSTMODEL Parameter UI', () => {
+  test('should render use_rag toggle', async () => {
+    render(<ParameterSettings endpoint="rustModel" />);
+    expect(screen.getByLabelText('Use RAG Enhancement')).toBeInTheDocument();
+  });
+  
+  test('should show correct default values', () => {
+    render(<ParameterSettings endpoint="rustModel" />);
+    expect(screen.getByDisplayValue('0.1')).toBeInTheDocument(); // temperature
+    expect(screen.getByDisplayValue('8192')).toBeInTheDocument(); // max_tokens
+  });
+});
+```
+
+**手动测试步骤**:
+1. 选择 RustModel 端点
+2. 打开参数设置面板
+3. 验证显示的参数：temperature, max_tokens, use_rag, stream
+4. 测试参数调整：滑动 temperature 滑块
+5. 测试 use_rag 开关切换
+6. 验证参数值保存和恢复
+
+**验证标准**:
+- ✅ 只显示 RUSTMODEL 支持的参数
+- ✅ use_rag 参数正确显示为布尔开关
+- ✅ max_tokens 最大值限制为 100,000
+- ✅ 默认值符合 RUSTMODEL 规范
+- ✅ 参数变更正确保存到状态
 
 ---
 
@@ -180,6 +275,77 @@
 
 4. **数据验证**: 确保input字符串长度在1-10000字符范围内
 
+### 测试验证
+
+**单元测试**:
+```javascript
+// 测试请求格式转换
+describe('RUSTMODEL Payload Creation', () => {
+  test('should convert messages to input string', () => {
+    const submission = {
+      conversation: { messages: [
+        { role: 'system', content: 'You are a Rust expert' },
+        { role: 'user', content: 'Create a factorial function' }
+      ]},
+      endpointOption: { endpoint: 'rustModel', temperature: 0.1 }
+    };
+    
+    const { payload } = createPayload(submission);
+    expect(payload.input).toBe('Create a factorial function');
+    expect(payload.messages).toBeUndefined();
+    expect(payload.temperature).toBe(0.1);
+  });
+  
+  test('should handle empty messages array', () => {
+    const submission = {
+      conversation: { messages: [] },
+      endpointOption: { endpoint: 'rustModel' }
+    };
+    
+    const { payload } = createPayload(submission);
+    expect(payload.input).toBe('');
+  });
+  
+  test('should validate input length', () => {
+    const longInput = 'a'.repeat(10001);
+    expect(() => validateRustModelInput(longInput)).toThrow('Input too long');
+  });
+});
+```
+
+**集成测试**:
+```javascript
+// 测试完整请求流程
+describe('RUSTMODEL Request Flow', () => {
+  test('should create correct payload for rustModel', async () => {
+    const mockSubmission = createMockSubmission('rustModel');
+    const { server, payload } = createPayload(mockSubmission);
+    
+    expect(server).toBe('/api/agents/chat/rustModel');
+    expect(payload).toMatchObject({
+      input: expect.any(String),
+      model: 'claude-3-5-sonnet-20241022',
+      temperature: expect.any(Number),
+      use_rag: expect.any(Boolean)
+    });
+  });
+});
+```
+
+**手动测试步骤**:
+1. 选择 RustModel 端点
+2. 输入测试消息："Create a simple Rust function"
+3. 打开浏览器开发者工具，查看网络请求
+4. 验证请求体格式符合 RUSTMODEL API 规范
+5. 测试多轮对话，验证只发送最新用户输入
+
+**验证标准**:
+- ✅ messages 数组正确转换为 input 字符串
+- ✅ 只包含 RUSTMODEL 支持的参数
+- ✅ 请求体符合 RUSTMODEL API 格式
+- ✅ input 长度验证正确执行
+- ✅ 服务器端点 URL 正确构建
+
 ---
 
 ## 4. 后端路由处理阶段
@@ -223,6 +389,58 @@ router.post('/:endpoint', controller);
 2. **中间件兼容**: 所有中间件对RUSTMODEL都适用
 3. **端点识别**: 在 `buildEndpointOption` 中添加rustModel分支
 4. **控制器复用**: 使用相同的AgentController
+
+### 测试验证
+
+**单元测试**:
+```javascript
+// 测试路由处理
+describe('RUSTMODEL Route Handling', () => {
+  test('should route to correct endpoint', async () => {
+    const req = { params: { endpoint: 'rustModel' }, body: { input: 'test' } };
+    const res = { json: jest.fn(), status: jest.fn() };
+    
+    await chatRouter(req, res);
+    expect(req.params.endpoint).toBe('rustModel');
+  });
+  
+  test('should apply all middleware', () => {
+    const middlewareStack = chatRouter.stack;
+    expect(middlewareStack.some(layer => layer.name === 'moderateText')).toBe(true);
+    expect(middlewareStack.some(layer => layer.name === 'checkAgentAccess')).toBe(true);
+  });
+});
+```
+
+**集成测试**:
+```javascript
+// 测试完整中间件链
+describe('RUSTMODEL Middleware Chain', () => {
+  test('should pass through all middleware', async () => {
+    const response = await request(app)
+      .post('/api/agents/chat/rustModel')
+      .send({ input: 'Create a function' })
+      .expect(200);
+    
+    // 验证中间件都被执行
+    expect(response.headers['content-type']).toMatch(/text\/event-stream/);
+  });
+});
+```
+
+**手动测试步骤**:
+1. 启动后端服务
+2. 发送 POST 请求到 `/api/agents/chat/rustModel`
+3. 验证请求通过所有中间件
+4. 检查响应头设置正确
+5. 验证内容审核和权限检查正常工作
+
+**验证标准**:
+- ✅ 路由正确识别 rustModel 端点
+- ✅ 所有中间件正常执行
+- ✅ 权限检查和内容审核生效
+- ✅ 响应头正确设置
+- ✅ 不影响其他端点的路由
 
 ---
 
@@ -272,6 +490,73 @@ const buildFunction = {
 2. **参数提取**: 只处理RUSTMODEL支持的参数
 3. **默认值设置**: temperature=0.1, max_tokens=8192等
 4. **参数验证**: input长度、token范围等
+
+### 测试验证
+
+**单元测试**:
+```javascript
+// 测试端点选项构建
+describe('RUSTMODEL buildOptions', () => {
+  test('should build correct options', () => {
+    const parsedBody = {
+      input: 'Create a function',
+      temperature: 0.2,
+      max_tokens: 4000,
+      use_rag: true
+    };
+    
+    const options = rustModel.buildOptions('rustModel', parsedBody);
+    expect(options).toMatchObject({
+      endpoint: 'rustModel',
+      input: 'Create a function',
+      temperature: 0.2,
+      max_tokens: 4000,
+      use_rag: true
+    });
+  });
+  
+  test('should apply default values', () => {
+    const parsedBody = { input: 'test' };
+    const options = rustModel.buildOptions('rustModel', parsedBody);
+    
+    expect(options.temperature).toBe(0.1);
+    expect(options.max_tokens).toBe(8192);
+    expect(options.use_rag).toBe(false);
+  });
+});
+```
+
+**集成测试**:
+```javascript
+// 测试中间件集成
+describe('buildEndpointOption with RUSTMODEL', () => {
+  test('should call rustModel.buildOptions', async () => {
+    const req = {
+      body: { endpoint: 'rustModel', input: 'test' }
+    };
+    const res = {};
+    const next = jest.fn();
+    
+    await buildEndpointOption(req, res, next);
+    expect(req.body.endpointOption.endpoint).toBe('rustModel');
+    expect(next).toHaveBeenCalled();
+  });
+});
+```
+
+**手动测试步骤**:
+1. 发送包含各种参数的请求
+2. 在 buildEndpointOption 中添加日志
+3. 验证 rustModel.buildOptions 被正确调用
+4. 检查构建的 endpointOption 对象
+5. 测试参数验证和默认值设置
+
+**验证标准**:
+- ✅ rustModel.buildOptions 正确注册
+- ✅ 参数提取和验证正确
+- ✅ 默认值正确应用
+- ✅ 返回的 endpointOption 格式正确
+- ✅ 错误参数被正确拒绝
 
 ---
 
@@ -332,6 +617,71 @@ DEBUG_RUSTMODEL=false
 2. **简化配置**: 只需要baseURL和debug选项
 3. **无认证处理**: 不需要API Key验证逻辑
 4. **环境变量**: 添加RUSTMODEL相关环境变量
+
+### 测试验证
+
+**单元测试**:
+```javascript
+// 测试客户端初始化
+describe('RUSTMODEL Client Initialization', () => {
+  test('should initialize with correct config', async () => {
+    process.env.RUSTMODEL_BASE_URL = 'https://test-api.com';
+    process.env.DEBUG_RUSTMODEL = 'true';
+    
+    const { client } = await initializeClient({
+      req: mockReq,
+      res: mockRes,
+      endpointOption: { model: 'claude-3-5-sonnet-20241022' }
+    });
+    
+    expect(client.baseURL).toBe('https://test-api.com');
+    expect(client.debug).toBe(true);
+    expect(client.apiKey).toBeUndefined(); // 无需认证
+  });
+  
+  test('should use default baseURL if not provided', async () => {
+    delete process.env.RUSTMODEL_BASE_URL;
+    
+    const { client } = await initializeClient({ req: mockReq, res: mockRes });
+    expect(client.baseURL).toBe('https://agent-workflow-993464051590.us-central1.run.app');
+  });
+});
+```
+
+**集成测试**:
+```javascript
+// 测试环境变量配置
+describe('RUSTMODEL Environment Configuration', () => {
+  test('should read environment variables correctly', () => {
+    const originalEnv = process.env;
+    process.env = {
+      ...originalEnv,
+      RUSTMODEL_BASE_URL: 'https://custom-api.com',
+      DEBUG_RUSTMODEL: 'false'
+    };
+    
+    const config = getRustModelConfig();
+    expect(config.baseURL).toBe('https://custom-api.com');
+    expect(config.debug).toBe(false);
+    
+    process.env = originalEnv;
+  });
+});
+```
+
+**手动测试步骤**:
+1. 设置环境变量 RUSTMODEL_BASE_URL
+2. 启动服务，检查初始化日志
+3. 发送请求到 rustModel 端点
+4. 验证客户端使用正确的配置
+5. 测试无环境变量时的默认行为
+
+**验证标准**:
+- ✅ 正确读取环境变量
+- ✅ 使用合理的默认值
+- ✅ 无需 API Key 认证
+- ✅ 客户端配置正确传递
+- ✅ 调试模式正确启用/禁用
 
 ---
 
@@ -453,6 +803,32 @@ DEBUG_RUSTMODEL=false
 4. **响应处理**: 适配工作流响应格式
 5. **错误映射**: 将FastAPI错误转换为统一格式
 
+### 测试验证（最简单方法）
+
+**快速测试**:
+```bash
+# 1. 直接测试API调用
+curl -X POST https://agent-workflow-993464051590.us-central1.run.app/v1/responses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Create a simple Rust function", "stream": false}'
+
+# 2. 验证无需Authorization头
+# 上面的请求应该成功（200状态码）
+```
+
+**手动验证步骤**:
+1. 在浏览器开发者工具中监控网络请求
+2. 发送一个RUSTMODEL请求
+3. 检查请求头：应该没有Authorization
+4. 检查请求体：应该是{input, model, temperature}格式
+5. 检查响应：应该包含code_blocks等扩展字段
+
+**验证标准**:
+- ✅ 请求URL正确 (`/v1/responses`)
+- ✅ 无Authorization头
+- ✅ 请求体格式符合RUSTMODEL规范
+- ✅ 响应包含工作流数据
+
 ---
 
 ## 9. 流式响应处理阶段
@@ -507,6 +883,30 @@ data: {"is_final": true, "id": "workflow_uuid", "choices": [...], "usage": {...}
 3. **元数据保留**: 保存工作流的详细信息
 4. **状态管理**: 跟踪工作流的不同阶段
 5. **错误事件**: 处理workflow.error事件
+
+### 测试验证（最简单方法）
+
+**快速测试**:
+```bash
+# 测试流式响应
+curl -X POST https://agent-workflow-993464051590.us-central1.run.app/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"input": "Create a function", "stream": true}' \
+  --no-buffer
+```
+
+**手动验证步骤**:
+1. 发送流式请求，观察SSE事件
+2. 验证事件序列：workflow.started → workflow.response → workflow.cargo_check → is_final:true
+3. 检查每个事件包含progress字段（0-100）
+4. 验证最终事件包含完整响应数据
+
+**验证标准**:
+- ✅ 接收到多个SSE事件
+- ✅ 事件包含progress进度信息
+- ✅ 最终事件is_final:true
+- ✅ 工作流事件正确映射为文本更新
 
 ---
 
@@ -621,6 +1021,34 @@ data: {"is_final": true, "id": "workflow_uuid", "choices": [...], "usage": {...}
 3. **前端适配**: 根据端点类型选择性显示扩展信息
 4. **数据类型**: 确保所有扩展字段的类型定义正确
 
+### 测试验证（最简单方法）
+
+**快速测试**:
+```javascript
+// 在浏览器控制台测试响应结构
+const response = await fetch('/api/agents/chat/rustModel', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({input: 'test'})
+});
+const data = await response.json();
+console.log('基础字段:', data.id, data.choices);
+console.log('扩展字段:', data.choices[0].message.code_blocks);
+```
+
+**手动验证步骤**:
+1. 发送RUSTMODEL请求
+2. 检查响应JSON结构
+3. 验证基础字段存在：id, object, choices, usage
+4. 验证扩展字段存在：code_blocks, cargo_check, evaluation
+5. 确认字段类型正确
+
+**验证标准**:
+- ✅ 包含OpenAI标准字段
+- ✅ 保留所有RUSTMODEL扩展字段
+- ✅ 字段类型定义正确
+- ✅ 数据结构完整
+
 ---
 
 ## 11. 前端消息显示阶段
@@ -677,6 +1105,33 @@ data: {"is_final": true, "id": "workflow_uuid", "choices": [...], "usage": {...}
    - `TestResults` - 测试结果
    - `CodeEvaluation` - 质量评估
 4. **样式设计**: 与现有UI风格保持一致
+
+### 测试验证（最简单方法）
+
+**快速测试**:
+```javascript
+// 在React DevTools中检查组件渲染
+// 1. 发送RUSTMODEL消息
+// 2. 在DevTools中查找消息组件
+// 3. 检查props中是否包含扩展字段
+```
+
+**手动验证步骤**:
+1. 选择RustModel，发送消息
+2. 检查消息显示：
+   - 基础文本内容正常显示
+   - 代码块有语法高亮
+   - 显示编译状态（✅成功 或 ❌失败）
+   - 显示测试结果列表
+   - 显示质量评分
+3. 验证UI样式与其他消息一致
+
+**验证标准**:
+- ✅ 基础消息内容正确显示
+- ✅ 代码块有语法高亮
+- ✅ 编译和测试状态清晰可见
+- ✅ 质量评估信息有用
+- ✅ UI风格保持一致
 
 ---
 
@@ -754,6 +1209,34 @@ data: {"is_final": true, "id": "workflow_uuid", "choices": [...], "usage": {...}
 3. **工作流错误**: 处理流式过程中的错误事件
 4. **用户友好**: 将技术错误转换为用户可理解的消息
 
+### 测试验证（最简单方法）
+
+**快速测试**:
+```bash
+# 1. 测试参数错误
+curl -X POST https://agent-workflow-993464051590.us-central1.run.app/v1/responses \
+  -H "Content-Type: application/json" \
+  -d '{}' # 缺少input字段
+
+# 2. 测试输入过长错误
+curl -X POST https://agent-workflow-993464051590.us-central1.run.app/v1/responses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "'$(printf 'a%.0s' {1..10001})'"}' # 超过10000字符
+```
+
+**手动验证步骤**:
+1. 发送无效请求（空输入、超长输入）
+2. 检查错误响应格式
+3. 验证前端错误提示用户友好
+4. 测试工作流中的编译错误
+5. 确认错误不会导致应用崩溃
+
+**验证标准**:
+- ✅ 错误响应格式统一
+- ✅ 错误消息用户友好
+- ✅ 不同错误类型正确区分
+- ✅ 应用不会因错误崩溃
+
 ---
 
 ## 13. 环境配置和部署
@@ -801,6 +1284,33 @@ DEBUG_RUSTMODEL=false
 2. **默认值**: 设置合理的默认Base URL
 3. **验证**: 启动时验证RUSTMODEL服务可用性
 4. **文档**: 更新部署文档说明新的环境变量
+
+### 测试验证（最简单方法）
+
+**快速测试**:
+```bash
+# 1. 测试环境变量
+export RUSTMODEL_BASE_URL=https://agent-workflow-993464051590.us-central1.run.app
+export DEBUG_RUSTMODEL=true
+npm run backend:dev
+
+# 2. 测试健康检查
+curl https://agent-workflow-993464051590.us-central1.run.app/health
+```
+
+**手动验证步骤**:
+1. 设置环境变量并启动服务
+2. 检查启动日志中的RUSTMODEL配置信息
+3. 访问 `/health` 端点验证服务可用
+4. 测试无环境变量时的默认行为
+5. 验证调试模式开关生效
+
+**验证标准**:
+- ✅ 环境变量正确读取
+- ✅ 默认配置合理
+- ✅ 服务健康检查通过
+- ✅ 启动日志信息完整
+- ✅ 调试模式正确切换
 
 ---
 
@@ -911,3 +1421,196 @@ DEBUG_RUSTMODEL=false
 - **用户体验**: 长时间处理的进度反馈
 
 这个开发指南为RUSTMODEL集成提供了完整的技术路线图，每个环节都有明确的实现策略和开发要点。
+
+---
+
+## 补充测试验证信息
+
+### 响应数据结构测试
+
+**单元测试**:
+```javascript
+// 测试响应适配
+describe('RUSTMODEL Response Adaptation', () => {
+  test('should preserve OpenAI compatible fields', () => {
+    const rustModelResponse = {
+      id: 'workflow_123',
+      object: 'chat.completion',
+      choices: [{
+        message: {
+          content: 'Result',
+          code_blocks: [{ language: 'rust', code: 'fn test() {}' }]
+        }
+      }]
+    };
+    
+    const adapted = adapter.adaptResponse(rustModelResponse);
+    expect(adapted.id).toBe('workflow_123');
+    expect(adapted.choices[0].message.content).toBe('Result');
+    expect(adapted.choices[0].message.code_blocks).toBeDefined();
+  });
+});
+```
+
+### 前端消息显示测试
+
+**UI组件测试**:
+```javascript
+// 测试RUSTMODEL消息组件
+describe('RustModelMessage Component', () => {
+  test('should render code blocks', () => {
+    const message = {
+      content: 'Here is the code',
+      code_blocks: [{ language: 'rust', filename: 'lib.rs', code: 'fn main() {}' }]
+    };
+    
+    render(<RustModelMessage message={message} />);
+    expect(screen.getByText('lib.rs')).toBeInTheDocument();
+    expect(screen.getByText('fn main() {}')).toBeInTheDocument();
+  });
+  
+  test('should show compilation status', () => {
+    const message = {
+      content: 'Code generated',
+      cargo_check: { success: true, exit_code: 0 }
+    };
+    
+    render(<RustModelMessage message={message} />);
+    expect(screen.getByText('✅ Compilation Successful')).toBeInTheDocument();
+  });
+});
+```
+
+### 错误处理测试
+
+**错误适配测试**:
+```javascript
+// 测试错误处理
+describe('RUSTMODEL Error Handling', () => {
+  test('should convert FastAPI errors to OpenAI format', () => {
+    const fastApiError = {
+      detail: [{ loc: ['body', 'input'], msg: 'field required' }]
+    };
+    
+    const converted = convertRustModelError(fastApiError, 422);
+    expect(converted).toMatchObject({
+      error: {
+        message: expect.stringContaining('field required'),
+        type: 'invalid_request_error'
+      }
+    });
+  });
+  
+  test('should handle workflow errors', () => {
+    const workflowError = {
+      event: 'workflow.error',
+      message: 'Compilation failed',
+      metadata: { error_type: 'compilation_error' }
+    };
+    
+    const handled = handleWorkflowError(workflowError);
+    expect(handled.isError).toBe(true);
+    expect(handled.error.message).toBe('Compilation failed');
+  });
+});
+```
+
+### 环境配置测试
+
+**配置验证测试**:
+```javascript
+// 测试环境配置
+describe('RUSTMODEL Environment Configuration', () => {
+  test('should validate RUSTMODEL service availability', async () => {
+    const isAvailable = await checkRustModelHealth();
+    expect(isAvailable).toBe(true);
+  });
+  
+  test('should handle missing environment variables', () => {
+    delete process.env.RUSTMODEL_BASE_URL;
+    const config = getRustModelConfig();
+    expect(config.baseURL).toBe('https://agent-workflow-993464051590.us-central1.run.app');
+  });
+});
+```
+
+### 性能监控测试
+
+**性能测试**:
+```javascript
+// 测试性能监控
+describe('RUSTMODEL Performance Monitoring', () => {
+  test('should track workflow completion time', async () => {
+    const startTime = Date.now();
+    await client.sendMessage('Create a function');
+    const duration = Date.now() - startTime;
+    
+    expect(duration).toBeLessThan(120000); // 2分钟内完成
+  });
+  
+  test('should monitor compilation success rate', () => {
+    const stats = getCompilationStats();
+    expect(stats.successRate).toBeGreaterThan(0.8); // 80%以上成功率
+  });
+});
+```
+
+### 端到端测试
+
+**完整流程测试**:
+```javascript
+// 端到端测试
+describe('RUSTMODEL End-to-End Flow', () => {
+  test('should complete full workflow from frontend to backend', async () => {
+    // 1. 前端选择模型
+    const { getByText, getByRole } = render(<App />);
+    fireEvent.click(getByRole('combobox'));
+    fireEvent.click(getByText('RustModel'));
+    
+    // 2. 输入消息
+    const input = getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Create a factorial function' } });
+    fireEvent.click(getByText('Send'));
+    
+    // 3. 等待响应
+    await waitFor(() => {
+      expect(getByText(/Here's a Rust function/)).toBeInTheDocument();
+    });
+    
+    // 4. 验证扩展信息显示
+    expect(getByText('✅ Compilation Successful')).toBeInTheDocument();
+    expect(getByText('✅ All Tests Passed')).toBeInTheDocument();
+  });
+});
+```
+
+### 关键测试检查清单
+
+**开发阶段测试**:
+- [ ] 模型选择器显示 RustModel 选项
+- [ ] 参数配置正确显示 RUSTMODEL 参数
+- [ ] 请求格式正确转换 (messages → input)
+- [ ] 后端路由正确处理 rustModel 端点
+- [ ] 客户端初始化无需 API Key
+- [ ] API 调用使用正确的端点和格式
+- [ ] 流式响应正确适配工作流事件
+- [ ] 响应数据保留所有扩展字段
+- [ ] UI 组件正确显示代码和评估信息
+- [ ] 错误处理和转换正确
+
+**集成测试**:
+- [ ] 完整的请求-响应流程
+- [ ] 流式响应的实时更新
+- [ ] 错误场景的正确处理
+- [ ] 性能指标监控
+- [ ] 环境配置验证
+
+**用户验收测试**:
+- [ ] 用户可以选择 RustModel
+- [ ] 输入 Rust 代码需求得到正确响应
+- [ ] 显示代码生成过程和结果
+- [ ] 编译和测试结果清晰展示
+- [ ] 代码质量评估信息有用
+- [ ] 整体用户体验流畅
+
+这个完整的测试验证体系确保了 RUSTMODEL 集成的每个环节都有明确的测试方法和验证标准。
